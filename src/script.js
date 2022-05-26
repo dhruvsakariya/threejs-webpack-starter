@@ -1,105 +1,91 @@
-import './style.css'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import * as dat from 'dat.gui'
+import * as THREE from "three";
+import * as dat from "dat.gui";
+import "./style.css";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-// Debug
-const gui = new dat.GUI()
+// once everything is loaded, we run our Three.js stuff.
+function init() {
+  // Debug
+  const gui = new dat.GUI();
 
-// Canvas
-const canvas = document.querySelector('canvas.webgl')
+  // Canvas
+  const canvas = document.querySelector("canvas.webgl");
+  // create a scene, that will hold all our elements such as objects, cameras and lights.
+  var scene = new THREE.Scene();
 
-// Scene
-const scene = new THREE.Scene()
+  // create a camera, which defines where we're looking at.
+  var camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
 
-// Objects
-const geometry = new THREE.TorusGeometry( .7, .2, 16, 100 );
+  // create a render and set the size
+  var renderer = new THREE.WebGLRenderer();
+  renderer.setClearColor(new THREE.Color(0xeeeeee));
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
-// Materials
+  // show axes in the screen
+  var axes = new THREE.AxisHelper(20);
+  scene.add(axes);
 
-const material = new THREE.MeshBasicMaterial()
-material.color = new THREE.Color(0xff0000)
+  // create the ground plane
+  var planeGeometry = new THREE.PlaneGeometry(60, 20);
+  var planeMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+  var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
-// Mesh
-const sphere = new THREE.Mesh(geometry,material)
-scene.add(sphere)
+  // rotate and position the plane
+  plane.rotation.x = -0.5 * Math.PI;
+  plane.position.x = 15;
+  plane.position.y = 0;
+  plane.position.z = 0;
 
-// Lights
+  // add the plane to the scene
+  scene.add(plane);
 
-const pointLight = new THREE.PointLight(0xffffff, 0.1)
-pointLight.position.x = 2
-pointLight.position.y = 3
-pointLight.position.z = 4
-scene.add(pointLight)
+  // create a cube
+  var cubeGeometry = new THREE.BoxGeometry(4, 4, 4);
+  var cubeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+    wireframe: true,
+  });
+  var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
-/**
- * Sizes
- */
-const sizes = {
-    width: window.innerWidth,
-    height: window.innerHeight
+  // position the cube
+  cube.position.x = -4;
+  cube.position.y = 3;
+  cube.position.z = 0;
+
+  // add the cube to the scene
+  scene.add(cube);
+
+  // create a sphere
+  var sphereGeometry = new THREE.SphereGeometry(4, 20, 20);
+  var sphereMaterial = new THREE.MeshBasicMaterial({
+    color: 0x7777ff,
+    wireframe: true,
+  });
+  var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+  // position the sphere
+  sphere.position.x = 20;
+  sphere.position.y = 4;
+  sphere.position.z = 2;
+
+  // add the sphere to the scene
+  scene.add(sphere);
+
+  // position and point the camera to the center of the scene
+  camera.position.x = -30;
+  camera.position.y = 40;
+  camera.position.z = 30;
+  camera.lookAt(scene.position);
+
+  // add the output of the renderer to the html element
+  document.getElementById("WebGL-output").appendChild(renderer.domElement);
+
+  // render the scene
+  renderer.render(scene, camera);
 }
-
-window.addEventListener('resize', () =>
-{
-    // Update sizes
-    sizes.width = window.innerWidth
-    sizes.height = window.innerHeight
-
-    // Update camera
-    camera.aspect = sizes.width / sizes.height
-    camera.updateProjectionMatrix()
-
-    // Update renderer
-    renderer.setSize(sizes.width, sizes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-})
-
-/**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
-camera.position.x = 0
-camera.position.y = 0
-camera.position.z = 2
-scene.add(camera)
-
-// Controls
-// const controls = new OrbitControls(camera, canvas)
-// controls.enableDamping = true
-
-/**
- * Renderer
- */
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
-})
-renderer.setSize(sizes.width, sizes.height)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-/**
- * Animate
- */
-
-const clock = new THREE.Clock()
-
-const tick = () =>
-{
-
-    const elapsedTime = clock.getElapsedTime()
-
-    // Update objects
-    sphere.rotation.y = .5 * elapsedTime
-
-    // Update Orbital Controls
-    // controls.update()
-
-    // Render
-    renderer.render(scene, camera)
-
-    // Call tick again on the next frame
-    window.requestAnimationFrame(tick)
-}
-
-tick()
+window.onload = init;
