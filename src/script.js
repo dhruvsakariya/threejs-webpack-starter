@@ -1,15 +1,13 @@
 import * as THREE from "three";
 import * as dat from "dat.gui";
+import * as Stats from "stats.js";
 import "./style.css";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 // once everything is loaded, we run our Three.js stuff.
 function init() {
-  // Debug
-  const gui = new dat.GUI();
+  var stats = initStats();
 
-  // Canvas
-  const canvas = document.querySelector("canvas.webgl");
   // create a scene, that will hold all our elements such as objects, cameras and lights.
   var scene = new THREE.Scene();
 
@@ -20,72 +18,128 @@ function init() {
     0.1,
     1000
   );
+  camera.position.x = 120;
+  camera.position.y = 60;
+  camera.position.z = 180;
 
   // create a render and set the size
   var renderer = new THREE.WebGLRenderer();
-  renderer.setClearColor(new THREE.Color(0xeeeeee));
+
+  renderer.setClearColor(new THREE.Color(0xeeeeee, 1.0));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  // show axes in the screen
-  var axes = new THREE.AxisHelper(20);
-  scene.add(axes);
+  // orbit control
+  const orbitcontrols = new OrbitControls(camera, renderer.domElement);
 
   // create the ground plane
-  var planeGeometry = new THREE.PlaneGeometry(60, 20);
-  var planeMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+  var planeGeometry = new THREE.PlaneGeometry(180, 180);
+  var planeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
   var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
   // rotate and position the plane
   plane.rotation.x = -0.5 * Math.PI;
-  plane.position.x = 15;
+  plane.position.x = 0;
   plane.position.y = 0;
   plane.position.z = 0;
 
   // add the plane to the scene
   scene.add(plane);
 
-  // create a cube
   var cubeGeometry = new THREE.BoxGeometry(4, 4, 4);
-  var cubeMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff0000,
-    wireframe: true,
-  });
-  var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
-  // position the cube
-  cube.position.x = -4;
-  cube.position.y = 3;
-  cube.position.z = 0;
+  for (var j = 0; j < planeGeometry.parameters.height / 5; j++) {
+    for (var i = 0; i < planeGeometry.parameters.width / 5; i++) {
+      var rnd = Math.random() * 0.75 + 0.25;
+      var cubeMaterial = new THREE.MeshLambertMaterial();
+      cubeMaterial.color = new THREE.Color(rnd, 0, 0);
+      var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
-  // add the cube to the scene
-  scene.add(cube);
+      cube.position.z = -(planeGeometry.parameters.height / 2) + 2 + j * 5;
+      cube.position.x = -(planeGeometry.parameters.width / 2) + 2 + i * 5;
+      cube.position.y = 2;
 
-  // create a sphere
-  var sphereGeometry = new THREE.SphereGeometry(4, 20, 20);
-  var sphereMaterial = new THREE.MeshBasicMaterial({
-    color: 0x7777ff,
-    wireframe: true,
-  });
-  var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      scene.add(cube);
+    }
+  }
 
-  // position the sphere
-  sphere.position.x = 20;
-  sphere.position.y = 4;
-  sphere.position.z = 2;
+  var directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+  directionalLight.position.set(-20, 40, 60);
+  scene.add(directionalLight);
 
-  // add the sphere to the scene
-  scene.add(sphere);
-
-  // position and point the camera to the center of the scene
-  camera.position.x = -30;
-  camera.position.y = 40;
-  camera.position.z = 30;
-  camera.lookAt(scene.position);
+  // add subtle ambient lighting
+  var ambientLight = new THREE.AmbientLight(0x292929);
+  scene.add(ambientLight);
 
   // add the output of the renderer to the html element
   document.getElementById("WebGL-output").appendChild(renderer.domElement);
 
-  // render the scene
-  renderer.render(scene, camera);
+  // call the render function
+  var step = 0;
+
+  var controls = new (function () {
+    this.perspective = "Perspective";
+    this.switchCamera = function () {
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera = new THREE.OrthographicCamera(
+          window.innerWidth / -16,
+          window.innerWidth / 16,
+          window.innerHeight / 16,
+          window.innerHeight / -16,
+          -200,
+          500
+        );
+        camera.position.x = 120;
+        camera.position.y = 60;
+        camera.position.z = 180;
+        camera.lookAt(scene.position);
+        this.perspective = "Orthographic";
+      } else {
+        camera = new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          1000
+        );
+        camera.position.x = 120;
+        camera.position.y = 60;
+        camera.position.z = 180;
+
+        camera.lookAt(scene.position);
+        this.perspective = "Perspective";
+      }
+    };
+  })();
+
+  var gui = new dat.GUI();
+  gui.add(controls, "switchCamera");
+  gui.add(controls, "perspective").listen();
+
+  // make sure that for the first time, the
+  // camera is looking at the scene
+  camera.lookAt(scene.position);
+  render();
+
+  function render() {
+    stats.update();
+    orbitcontrols.update();
+    // render using requestAnimationFrame
+    requestAnimationFrame(render);
+    renderer.render(scene, camera);
+  }
+
+  function initStats() {
+    var stats = new Stats();
+
+    stats.setMode(0); // 0: fps, 1: ms
+
+    // Align top-left
+    stats.domElement.style.position = "absolute";
+    stats.domElement.style.left = "0px";
+    stats.domElement.style.top = "0px";
+
+    document.getElementById("Stats-output").appendChild(stats.domElement);
+
+    return stats;
+  }
 }
 window.onload = init;
